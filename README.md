@@ -13,6 +13,10 @@
   Initially, we take any random image as target(or taking the content image would be useful) and compute the <b>Content loss</b> and <b>Style loss</b> and decreasing these losses we would reach the perfect target image that has the style of one image and content of other image. For more learning checkout the links below.
 </p>
 
+<p>
+  <b>Note:</b> The notebook has been ran on Google Colab, If you are working on local machine some starting four cells can be ignored. To use this and produce new styled images, just change the links to the <b>style</b> and <b>content</b> variables, change the path in the last cell, and include the path where you want to save the styled image and run the entire notebook. 
+</p>
+
 <h2>Languages or frameworks used</h2>
 <p>
 <ul>
