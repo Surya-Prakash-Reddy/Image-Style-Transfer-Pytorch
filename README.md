@@ -1,10 +1,11 @@
 # Image Style Transfer using PyTorch
-> Classifies whether an image is of a dog or cat based on the features
+> Combine two images and produce new image with style of first image and content of second image
 
 ## Table of contents
 * [About Project](#about-project)
 * [Languages or Frameworks Used](#languages-or-frameworks-used)
 * [Setup](#setup)
+* [More Learning](#more-learning)
 
 ## About Project:
 
