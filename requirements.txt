@@ -1,0 +1,6 @@
+numpy
+opencv-python
+scikit-image
+torch
+torchvision
+Pillow==4.1.1
