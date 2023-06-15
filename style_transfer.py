@@ -3,9 +3,8 @@
 from pathlib import Path
 
 import numpy as np
-import matplotlib.pyplot as plt
 from PIL import Image
-# import cv2
+import cv2
 import skimage
 
 import torch
@@ -137,9 +136,11 @@ def style_convert(style_image: Path, content_image: Path):
 
         if i % print_every==0:
             print(f'{i}: Total Loss: ', total_loss.item())
-            plt.imshow(imconvert(target))
             dst_name = DST_DIR / f"{content_image.stem}_{i:05d}.jpg"
-            skimage.io.imsave(str(dst_name), imconvert(target))
+            converted = imconvert(target)
+            [h, w] = content.shape[:2]
+            resized = cv2.resize(converted, (w, h), interpolation=cv2.INTER_LINEAR)
+            skimage.io.imsave(str(dst_name), resized)
 
 if __name__ == "__main__":
     import argparse
