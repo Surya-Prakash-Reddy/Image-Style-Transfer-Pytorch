@@ -1,14 +1,14 @@
-from google.colab import drive
-drive.mount('/content/drive/')
+# from google.colab import drive
+# drive.mount('/content/drive/')
 
-get_ipython().system('pip install torch torchvision')
-
-
-#Doing this because, sometimes we get an error 'module 'PIL.Image' has no attribute 'register_extensions' in Google Colab
-#uninstall the old one
-get_ipython().system('pip uninstall -y Pillow')
-# install the new one
-get_ipython().system('pip install Pillow==4.1.1')
+# get_ipython().system('pip install torch torchvision')
+#
+#
+# #Doing this because, sometimes we get an error 'module 'PIL.Image' has no attribute 'register_extensions' in Google Colab
+# #uninstall the old one
+# get_ipython().system('pip uninstall -y Pillow')
+# # install the new one
+# get_ipython().system('pip install Pillow==4.1.1')
 
 
 
@@ -50,14 +50,16 @@ def load_image(path, max_size=400, shape=None):
     
     return image
     
+from pathlib import Path
+REPO_ROOT = Path("/media/waragai/ExtremeSSD/github/Image-Style-Transfer-Pytorch")
 
-
-
+content_image = REPO_ROOT / "assets/surya2.jpg"
 #load content image
-content = load_image('drive/My Drive/Colab Notebooks/Deep Learning/PyTorch Scholarship/Style Transfer/assets/surya2.jpg').to(device)
+content = load_image(str(content_image)).to(device)
 
+style_image = REPO_ROOT / "assets/oily_mcoilface.jpg"
 #load style image
-style = load_image('drive/My Drive/Colab Notebooks/Deep Learning/PyTorch Scholarship/Style Transfer/assets/oily_mcoilface.jpg', shape=content.shape[-2:]).to(device)
+style = load_image(str(style_image), shape=content.shape[-2:]).to(device)
 
 
 #function to convert image from it's normalised form to back to regular form
