@@ -5,11 +5,15 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+# import cv2
+import skimage
 
 import torch
 from torchvision import transforms, models
 
 REPO_ROOT = Path(__file__).parent
+DST_DIR = REPO_ROOT / "output"
+DST_DIR.mkdir(exist_ok=True)
 
 def load_image(path, max_size=400, shape=None):
     image = Image.open(path).convert('RGB')
@@ -84,12 +88,14 @@ style_image = REPO_ROOT / "assets/oily_mcoilface.jpg"
 #load style image
 style = load_image(str(style_image), shape=content.shape[-2:]).to(device)
 
+print("loaded images")
 
-fig = plt.figure(figsize=(20,10))
-ax1 = fig.add_subplot(1,2,1, xticks=[], yticks=[])
-ax1.imshow(imconvert(content))
-ax2 = fig.add_subplot(1,2,2, xticks=[], yticks=[])
-ax2.imshow(imconvert(style))
+if 0:
+    fig = plt.figure(figsize=(20,10))
+    ax1 = fig.add_subplot(1,2,1, xticks=[], yticks=[])
+    ax1.imshow(imconvert(content))
+    ax2 = fig.add_subplot(1,2,2, xticks=[], yticks=[])
+    ax2.imshow(imconvert(style))
 
 #printing the vgg model
 vgg
@@ -97,6 +103,9 @@ vgg
 
 style_features = get_features(style, vgg)
 content_features = get_features(content, vgg)
+
+
+print("done get_features()")
 
 style_grams = {layer: gram_matrix(style_features[layer]) for layer in style_features}
 
@@ -118,7 +127,9 @@ style_weight = 5e6  # beta
 optimizer = torch.optim.Adam([target], lr=0.003)
 
 steps = 2400
-print_every = 400
+print_every = 40
+
+print("going to convert images")
 
 for i in range(1,steps+1):
     
@@ -127,17 +138,11 @@ for i in range(1,steps+1):
     
     style_loss = 0
     for layer in style_weights:
-        
         target_feature = target_features[layer]
-        
         _, d, h, w = target_feature.shape
-        
         target_gram = gram_matrix(target_feature)
-        
         style_gram = style_grams[layer]
-        
         layer_style_loss = style_weights[layer]*torch.mean((target_gram - style_gram)**2)
-        
         style_loss += layer_style_loss/ (d*h*w)
     
     total_loss = style_weight*style_loss + content_weight*content_loss
@@ -146,21 +151,24 @@ for i in range(1,steps+1):
     total_loss.backward()
     optimizer.step()
     
-    if i%print_every==0:
-        print('Total Loss: ', total_loss.item())
+    if i % print_every==0:
+        print(f'{i}: Total Loss: ', total_loss.item())
         plt.imshow(imconvert(target))
+        dst_name = DST_DIR / f"{content_image.stem}_{i:05d}.jpg"
+        skimage.io.imsave(str(dst_name), imconvert(target))
+        # pil_img = Image(imconvert(target))
+        # pil_img.save(str(dst_name))
+if 0:
+    fig = plt.figure(figsize=(22,10))
+    ax1 = fig.add_subplot(1,3,1, xticks=[], yticks=[])
+    ax1.imshow(imconvert(content))
+    ax2 = fig.add_subplot(1,3,2, xticks=[], yticks=[])
+    ax2.imshow(imconvert(style))
 
+    ax3 = fig.add_subplot(1,3,3, xticks=[], yticks=[])
+    ax3.imshow(imconvert(target))
 
-fig = plt.figure(figsize=(22,10))
-ax1 = fig.add_subplot(1,3,1, xticks=[], yticks=[])
-ax1.imshow(imconvert(content))
-ax2 = fig.add_subplot(1,3,2, xticks=[], yticks=[])
-ax2.imshow(imconvert(style))
-
-ax3 = fig.add_subplot(1,3,3, xticks=[], yticks=[])
-ax3.imshow(imconvert(target))
-
-converted_name = REPO_ROOT / "assets/surya2_style.jpg"
-plt.imsave(str(converted_name), imconvert(target))
+    converted_name = REPO_ROOT / "assets/surya2_style.jpg"
+    plt.imsave(str(converted_name), imconvert(target))
 
 
