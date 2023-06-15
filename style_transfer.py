@@ -137,8 +137,10 @@ def style_convert(style_image: Path, content_image: Path):
 
         if i % print_every==0:
             print(f'{i}: Total Loss: ', total_loss.item())
-            dst_name = DST_DIR / f"{content_image.stem}_{i:05d}.jpg"
+            dst_name0 = DST_DIR / f"{content_image.stem}_{i:05d}.jpg"
+            dst_name = DST_DIR / f"{content_image.stem}_{i:05d}_original_size.jpg"
             converted = imconvert(target)
+            skimage.io.imsave(str(dst_name0), converted)
             resized = cv2.resize(converted, (width, height), interpolation=cv2.INTER_LINEAR)
             skimage.io.imsave(str(dst_name), resized)
 
