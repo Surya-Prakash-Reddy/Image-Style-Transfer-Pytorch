@@ -68,24 +68,19 @@ def gram_matrix(tensor):
     return tensor
 
 
-if __name__ == "__main__":
+def style_convert(style_image: Path, content_image: Path):
     vgg = models.vgg19(pretrained=True).features
 
     for param in vgg.parameters():
         param.requires_grad_(False)
 
-
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Cuda Available: ', torch.cuda.is_available())
     vgg.to(device)
 
-
-
-    content_image = REPO_ROOT / "assets/surya2.jpg"
     #load content image
     content = load_image(str(content_image)).to(device)
 
-    style_image = REPO_ROOT / "assets/oily_mcoilface.jpg"
     #load style image
     style = load_image(str(style_image), shape=content.shape[-2:]).to(device)
 
@@ -115,7 +110,7 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.Adam([target], lr=0.003)
 
-    steps = 2400
+    steps = 200
     print_every = 40
 
     print("going to convert images")
@@ -145,3 +140,16 @@ if __name__ == "__main__":
             plt.imshow(imconvert(target))
             dst_name = DST_DIR / f"{content_image.stem}_{i:05d}.jpg"
             skimage.io.imsave(str(dst_name), imconvert(target))
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser("style transfer")
+    parser.add_argument("style", help="style image")
+    parser.add_argument("content", help="image to style transfer")
+    args = parser.parse_args()
+
+    style_image = Path(args.style)
+    content_image = Path(args.content)
+
+    style_convert(style_image, content_image)
+
