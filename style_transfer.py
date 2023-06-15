@@ -1,18 +1,7 @@
-# from google.colab import drive
-# drive.mount('/content/drive/')
-
-# get_ipython().system('pip install torch torchvision')
-#
-#
-# #Doing this because, sometimes we get an error 'module 'PIL.Image' has no attribute 'register_extensions' in Google Colab
-# #uninstall the old one
-# get_ipython().system('pip uninstall -y Pillow')
-# # install the new one
-# get_ipython().system('pip install Pillow==4.1.1')
-
-
 
 #importing libraries
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -20,47 +9,27 @@ from PIL import Image
 import torch
 from torchvision import transforms, models
 
-vgg = models.vgg19(pretrained=True).features
-
-for param in vgg.parameters():
-    param.requires_grad_(False)
-
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('Cuda Available: ', torch.cuda.is_available())
-vgg.to(device)
+REPO_ROOT = Path(__file__).parent
 
 def load_image(path, max_size=400, shape=None):
     image = Image.open(path).convert('RGB')
-    
+
     if max(image.size) > max_size:
         size = max_size
     else:
         size = max(image.size)
     if shape is not None:
         size = shape
-    
+
     in_transform = transforms.Compose([
         transforms.Resize(size),
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
-    
-    image = in_transform(image)[:3,:,:].unsqueeze(0)
-    
+
+    image = in_transform(image)[:3, :, :].unsqueeze(0)
+
     return image
-    
-from pathlib import Path
-REPO_ROOT = Path("/media/waragai/ExtremeSSD/github/Image-Style-Transfer-Pytorch")
-
-content_image = REPO_ROOT / "assets/surya2.jpg"
-#load content image
-content = load_image(str(content_image)).to(device)
-
-style_image = REPO_ROOT / "assets/oily_mcoilface.jpg"
-#load style image
-style = load_image(str(style_image), shape=content.shape[-2:]).to(device)
-
 
 #function to convert image from it's normalised form to back to regular form
 def imconvert(tensor):
@@ -72,6 +41,49 @@ def imconvert(tensor):
     return tensor
 
 
+# defining the function to get layers
+def get_features(image, model, layers=None):
+    if layers is None:
+        layers = {'0': 'conv1_1', '5': 'conv2_1', '10': 'conv3_1', '19': 'conv4_1', '28': 'conv5_1', '21': 'conv4_2'}
+
+    features = {}
+    for name, layer in model._modules.items():
+        image = layer(image)
+        if name in layers:
+            features[layers[name]] = image
+
+    return features
+
+
+# calculating the gram matrix
+def gram_matrix(tensor):
+    batch_size, depth, height, width = tensor.shape
+
+    tensor = tensor.view(depth, -1)
+    tensor = torch.mm(tensor, tensor.t())
+    return tensor
+
+
+vgg = models.vgg19(pretrained=True).features
+
+for param in vgg.parameters():
+    param.requires_grad_(False)
+
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print('Cuda Available: ', torch.cuda.is_available())
+vgg.to(device)
+
+
+
+content_image = REPO_ROOT / "assets/surya2.jpg"
+#load content image
+content = load_image(str(content_image)).to(device)
+
+style_image = REPO_ROOT / "assets/oily_mcoilface.jpg"
+#load style image
+style = load_image(str(style_image), shape=content.shape[-2:]).to(device)
+
 
 fig = plt.figure(figsize=(20,10))
 ax1 = fig.add_subplot(1,2,1, xticks=[], yticks=[])
@@ -81,27 +93,6 @@ ax2.imshow(imconvert(style))
 
 #printing the vgg model
 vgg
-
-#defining the function to get layers
-def get_features(image, model, layers=None):
-    if layers is None:
-        layers = {'0':'conv1_1','5':'conv2_1', '10':'conv3_1', '19':'conv4_1', '28':'conv5_1', '21':'conv4_2'}
-    
-    features = {}
-    for name, layer in model._modules.items():
-        image = layer(image)
-        if name in layers:
-            features[layers[name]]=image
-    
-    return features
-
-#calculating the gram matrix
-def gram_matrix(tensor):
-    batch_size, depth, height, width = tensor.shape
-    
-    tensor = tensor.view(depth, -1)
-    tensor = torch.mm(tensor, tensor.t())
-    return tensor
 
 
 style_features = get_features(style, vgg)
@@ -169,7 +160,7 @@ ax2.imshow(imconvert(style))
 ax3 = fig.add_subplot(1,3,3, xticks=[], yticks=[])
 ax3.imshow(imconvert(target))
 
-
-plt.imsave('drive/My Drive/Colab Notebooks/Deep Learning/PyTorch Scholarship/Style Transfer/assets/surya2_style.jpg', imconvert(target))
+converted_name = REPO_ROOT / "assets/surya2_style.jpg"
+plt.imsave(str(converted_name), imconvert(target))
 
 
