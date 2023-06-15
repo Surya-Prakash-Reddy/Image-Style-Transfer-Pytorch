@@ -1,22 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 from google.colab import drive
 drive.mount('/content/drive/')
 
-
-# ls
-
-# In[ ]:
-
-
 get_ipython().system('pip install torch torchvision')
-
-
-# In[ ]:
 
 
 #Doing this because, sometimes we get an error 'module 'PIL.Image' has no attribute 'register_extensions' in Google Colab
@@ -25,8 +10,6 @@ get_ipython().system('pip uninstall -y Pillow')
 # install the new one
 get_ipython().system('pip install Pillow==4.1.1')
 
-
-# In[ ]:
 
 
 #importing libraries
@@ -37,26 +20,15 @@ from PIL import Image
 import torch
 from torchvision import transforms, models
 
-
-# In[ ]:
-
-
 vgg = models.vgg19(pretrained=True).features
 
 for param in vgg.parameters():
     param.requires_grad_(False)
 
 
-# In[ ]:
-
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('Cuda Available: ', torch.cuda.is_available())
 vgg.to(device)
-
-
-# In[ ]:
-
 
 def load_image(path, max_size=400, shape=None):
     image = Image.open(path).convert('RGB')
@@ -80,17 +52,12 @@ def load_image(path, max_size=400, shape=None):
     
 
 
-# In[ ]:
-
 
 #load content image
 content = load_image('drive/My Drive/Colab Notebooks/Deep Learning/PyTorch Scholarship/Style Transfer/assets/surya2.jpg').to(device)
 
 #load style image
 style = load_image('drive/My Drive/Colab Notebooks/Deep Learning/PyTorch Scholarship/Style Transfer/assets/oily_mcoilface.jpg', shape=content.shape[-2:]).to(device)
-
-
-# In[ ]:
 
 
 #function to convert image from it's normalised form to back to regular form
@@ -103,8 +70,6 @@ def imconvert(tensor):
     return tensor
 
 
-# In[ ]:
-
 
 fig = plt.figure(figsize=(20,10))
 ax1 = fig.add_subplot(1,2,1, xticks=[], yticks=[])
@@ -112,16 +77,8 @@ ax1.imshow(imconvert(content))
 ax2 = fig.add_subplot(1,2,2, xticks=[], yticks=[])
 ax2.imshow(imconvert(style))
 
-
-# In[ ]:
-
-
 #printing the vgg model
 vgg
-
-
-# In[ ]:
-
 
 #defining the function to get layers
 def get_features(image, model, layers=None):
@@ -136,10 +93,6 @@ def get_features(image, model, layers=None):
     
     return features
 
-
-# In[ ]:
-
-
 #calculating the gram matrix
 def gram_matrix(tensor):
     batch_size, depth, height, width = tensor.shape
@@ -147,9 +100,6 @@ def gram_matrix(tensor):
     tensor = tensor.view(depth, -1)
     tensor = torch.mm(tensor, tensor.t())
     return tensor
-
-
-# In[ ]:
 
 
 style_features = get_features(style, vgg)
@@ -161,9 +111,6 @@ style_grams = {layer: gram_matrix(style_features[layer]) for layer in style_feat
 target = content.clone().requires_grad_(True).to(device)
 
 
-# In[ ]:
-
-
 style_weights = {'conv1_1': 1.,
                  'conv2_1': 0.8,
                  'conv3_1': 0.5,
@@ -173,9 +120,6 @@ style_weights = {'conv1_1': 1.,
 
 content_weight = 1  # alpha
 style_weight = 5e6  # beta
-
-
-# In[ ]:
 
 
 optimizer = torch.optim.Adam([target], lr=0.003)
@@ -214,9 +158,6 @@ for i in range(1,steps+1):
         plt.imshow(imconvert(target))
 
 
-# In[ ]:
-
-
 fig = plt.figure(figsize=(22,10))
 ax1 = fig.add_subplot(1,3,1, xticks=[], yticks=[])
 ax1.imshow(imconvert(content))
@@ -227,14 +168,6 @@ ax3 = fig.add_subplot(1,3,3, xticks=[], yticks=[])
 ax3.imshow(imconvert(target))
 
 
-# In[ ]:
-
-
 plt.imsave('drive/My Drive/Colab Notebooks/Deep Learning/PyTorch Scholarship/Style Transfer/assets/surya2_style.jpg', imconvert(target))
-
-
-# In[ ]:
-
-
 
 
