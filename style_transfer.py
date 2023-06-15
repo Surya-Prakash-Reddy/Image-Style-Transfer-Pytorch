@@ -68,107 +68,80 @@ def gram_matrix(tensor):
     return tensor
 
 
-vgg = models.vgg19(pretrained=True).features
+if __name__ == "__main__":
+    vgg = models.vgg19(pretrained=True).features
 
-for param in vgg.parameters():
-    param.requires_grad_(False)
-
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('Cuda Available: ', torch.cuda.is_available())
-vgg.to(device)
+    for param in vgg.parameters():
+        param.requires_grad_(False)
 
 
-
-content_image = REPO_ROOT / "assets/surya2.jpg"
-#load content image
-content = load_image(str(content_image)).to(device)
-
-style_image = REPO_ROOT / "assets/oily_mcoilface.jpg"
-#load style image
-style = load_image(str(style_image), shape=content.shape[-2:]).to(device)
-
-print("loaded images")
-
-if 0:
-    fig = plt.figure(figsize=(20,10))
-    ax1 = fig.add_subplot(1,2,1, xticks=[], yticks=[])
-    ax1.imshow(imconvert(content))
-    ax2 = fig.add_subplot(1,2,2, xticks=[], yticks=[])
-    ax2.imshow(imconvert(style))
-
-#printing the vgg model
-vgg
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Cuda Available: ', torch.cuda.is_available())
+    vgg.to(device)
 
 
-style_features = get_features(style, vgg)
-content_features = get_features(content, vgg)
+
+    content_image = REPO_ROOT / "assets/surya2.jpg"
+    #load content image
+    content = load_image(str(content_image)).to(device)
+
+    style_image = REPO_ROOT / "assets/oily_mcoilface.jpg"
+    #load style image
+    style = load_image(str(style_image), shape=content.shape[-2:]).to(device)
+
+    print("loaded images")
+
+    style_features = get_features(style, vgg)
+    content_features = get_features(content, vgg)
+
+    print("done get_features()")
+
+    style_grams = {layer: gram_matrix(style_features[layer]) for layer in style_features}
+
+    #we could start with random image, but it would be good to start with content image
+    target = content.clone().requires_grad_(True).to(device)
 
 
-print("done get_features()")
-
-style_grams = {layer: gram_matrix(style_features[layer]) for layer in style_features}
-
-#we could start with random image, but it would be good to start with content image
-target = content.clone().requires_grad_(True).to(device)
-
-
-style_weights = {'conv1_1': 1.,
-                 'conv2_1': 0.8,
-                 'conv3_1': 0.5,
-                 'conv4_1': 0.3,
-                 'conv5_1': 0.1}
+    style_weights = {'conv1_1': 1.,
+                     'conv2_1': 0.8,
+                     'conv3_1': 0.5,
+                     'conv4_1': 0.3,
+                     'conv5_1': 0.1}
 
 
-content_weight = 1  # alpha
-style_weight = 5e6  # beta
+    content_weight = 1  # alpha
+    style_weight = 5e6  # beta
 
 
-optimizer = torch.optim.Adam([target], lr=0.003)
+    optimizer = torch.optim.Adam([target], lr=0.003)
 
-steps = 2400
-print_every = 40
+    steps = 2400
+    print_every = 40
 
-print("going to convert images")
+    print("going to convert images")
 
-for i in range(1,steps+1):
-    
-    target_features = get_features(target, vgg)
-    content_loss = torch.mean((content_features['conv4_2']-target_features['conv4_2'])**2)
-    
-    style_loss = 0
-    for layer in style_weights:
-        target_feature = target_features[layer]
-        _, d, h, w = target_feature.shape
-        target_gram = gram_matrix(target_feature)
-        style_gram = style_grams[layer]
-        layer_style_loss = style_weights[layer]*torch.mean((target_gram - style_gram)**2)
-        style_loss += layer_style_loss/ (d*h*w)
-    
-    total_loss = style_weight*style_loss + content_weight*content_loss
-    
-    optimizer.zero_grad()
-    total_loss.backward()
-    optimizer.step()
-    
-    if i % print_every==0:
-        print(f'{i}: Total Loss: ', total_loss.item())
-        plt.imshow(imconvert(target))
-        dst_name = DST_DIR / f"{content_image.stem}_{i:05d}.jpg"
-        skimage.io.imsave(str(dst_name), imconvert(target))
-        # pil_img = Image(imconvert(target))
-        # pil_img.save(str(dst_name))
-if 0:
-    fig = plt.figure(figsize=(22,10))
-    ax1 = fig.add_subplot(1,3,1, xticks=[], yticks=[])
-    ax1.imshow(imconvert(content))
-    ax2 = fig.add_subplot(1,3,2, xticks=[], yticks=[])
-    ax2.imshow(imconvert(style))
+    for i in range(1,steps+1):
 
-    ax3 = fig.add_subplot(1,3,3, xticks=[], yticks=[])
-    ax3.imshow(imconvert(target))
+        target_features = get_features(target, vgg)
+        content_loss = torch.mean((content_features['conv4_2']-target_features['conv4_2'])**2)
 
-    converted_name = REPO_ROOT / "assets/surya2_style.jpg"
-    plt.imsave(str(converted_name), imconvert(target))
+        style_loss = 0
+        for layer in style_weights:
+            target_feature = target_features[layer]
+            _, d, h, w = target_feature.shape
+            target_gram = gram_matrix(target_feature)
+            style_gram = style_grams[layer]
+            layer_style_loss = style_weights[layer]*torch.mean((target_gram - style_gram)**2)
+            style_loss += layer_style_loss/ (d*h*w)
 
+        total_loss = style_weight*style_loss + content_weight*content_loss
 
+        optimizer.zero_grad()
+        total_loss.backward()
+        optimizer.step()
+
+        if i % print_every==0:
+            print(f'{i}: Total Loss: ', total_loss.item())
+            plt.imshow(imconvert(target))
+            dst_name = DST_DIR / f"{content_image.stem}_{i:05d}.jpg"
+            skimage.io.imsave(str(dst_name), imconvert(target))
