@@ -79,6 +79,7 @@ def style_convert(style_image: Path, content_image: Path):
 
     #load content image
     content = load_image(str(content_image)).to(device)
+    [height, width] = cv2.imread(str(content_image)).shape[:2]
 
     #load style image
     style = load_image(str(style_image), shape=content.shape[-2:]).to(device)
@@ -138,8 +139,7 @@ def style_convert(style_image: Path, content_image: Path):
             print(f'{i}: Total Loss: ', total_loss.item())
             dst_name = DST_DIR / f"{content_image.stem}_{i:05d}.jpg"
             converted = imconvert(target)
-            [h, w] = content.shape[:2]
-            resized = cv2.resize(converted, (w, h), interpolation=cv2.INTER_LINEAR)
+            resized = cv2.resize(converted, (width, height), interpolation=cv2.INTER_LINEAR)
             skimage.io.imsave(str(dst_name), resized)
 
 if __name__ == "__main__":
@@ -153,4 +153,3 @@ if __name__ == "__main__":
     content_image = Path(args.content)
 
     style_convert(style_image, content_image)
-
